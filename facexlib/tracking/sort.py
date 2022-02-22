@@ -86,7 +86,4 @@ class SORT(object):
                     d[2] < 0 or d[3] < 0 or d[0] > img_size[1] or d[1] > img_size[0]):
                 print(f'Remove tracker: {trk.id + 1}')
                 self.trackers.pop(i)
-        if len(ret) > 0:
-            return np.concatenate(ret)
-        else:
-            return np.empty((0, 5))
+        return np.concatenate(ret) if ret else np.empty((0, 5))

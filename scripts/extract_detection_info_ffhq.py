@@ -62,7 +62,7 @@ def get_center_landmark(landmarks, center):
 
 pbar = tqdm(total=len(img_list), unit='image')
 save_np = []
-for idx, path in enumerate(img_list):
+for path in img_list:
     img_name = os.path.basename(path)
     pbar.update(1)
     pbar.set_description(path)

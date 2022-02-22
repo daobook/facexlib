@@ -5,12 +5,11 @@ from .arcface_arch import Backbone
 
 
 def init_recognition_model(model_name, half=False, device='cuda'):
-    if model_name == 'arcface':
-        model = Backbone(num_layers=50, drop_ratio=0.6, mode='ir_se').to('cuda').eval()
-        model_url = 'https://github.com/xinntao/facexlib/releases/download/v0.1.0/recognition_arcface_ir_se50.pth'
-    else:
+    if model_name != 'arcface':
         raise NotImplementedError(f'{model_name} is not implemented.')
 
+    model = Backbone(num_layers=50, drop_ratio=0.6, mode='ir_se').to('cuda').eval()
+    model_url = 'https://github.com/xinntao/facexlib/releases/download/v0.1.0/recognition_arcface_ir_se50.pth'
     model_path = load_file_from_url(url=model_url, model_dir='facexlib/weights', progress=True, file_name=None)
     model.load_state_dict(torch.load(model_path), strict=True)
     model.eval()

@@ -28,8 +28,7 @@ def get_git_hash():
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
         env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
-        return out
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
 
     try:
         out = _minimal_ext_cmd(['git', 'rev-parse', 'HEAD'])
@@ -41,12 +40,7 @@ def get_git_hash():
 
 
 def get_hash():
-    if os.path.exists('.git'):
-        sha = get_git_hash()[:7]
-    else:
-        sha = 'unknown'
-
-    return sha
+    return get_git_hash()[:7] if os.path.exists('.git') else 'unknown'
 
 
 def write_version_py():

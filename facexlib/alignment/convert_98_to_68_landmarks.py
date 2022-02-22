@@ -47,7 +47,7 @@ def landmark_98_to_68(landmark_98):
 
     landmark_68 = np.zeros((68, 2), dtype='float32')
     # cheek
-    for i in range(0, 33):
+    for i in range(33):
         if i % 2 == 0:
             landmark_68[int(i / 2), :] = landmark_98[i, :]
     # nose

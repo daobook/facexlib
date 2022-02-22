@@ -4,7 +4,7 @@ import numpy as np
 
 def visualize_alignment(img, landmarks, save_path=None, to_bgr=False):
     img = np.copy(img)
-    h, w = img.shape[0:2]
+    h, w = img.shape[:2]
     circle_size = int(max(h, w) / 150)
     if to_bgr:
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
