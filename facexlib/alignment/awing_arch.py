@@ -228,34 +228,34 @@ class HourGlass(nn.Module):
         self._generate_network(self.depth)
 
     def _generate_network(self, level):
-        self.add_module('b1_' + str(level), ConvBlock(256, 256))
+        self.add_module(f'b1_{str(level)}', ConvBlock(256, 256))
 
-        self.add_module('b2_' + str(level), ConvBlock(256, 256))
+        self.add_module(f'b2_{str(level)}', ConvBlock(256, 256))
 
         if level > 1:
             self._generate_network(level - 1)
         else:
-            self.add_module('b2_plus_' + str(level), ConvBlock(256, 256))
+            self.add_module(f'b2_plus_{str(level)}', ConvBlock(256, 256))
 
-        self.add_module('b3_' + str(level), ConvBlock(256, 256))
+        self.add_module(f'b3_{str(level)}', ConvBlock(256, 256))
 
     def _forward(self, level, inp):
         # Upper branch
         up1 = inp
-        up1 = self._modules['b1_' + str(level)](up1)
+        up1 = self._modules[f'b1_{str(level)}'](up1)
 
         # Lower branch
         low1 = F.avg_pool2d(inp, 2, stride=2)
-        low1 = self._modules['b2_' + str(level)](low1)
+        low1 = self._modules[f'b2_{str(level)}'](low1)
 
         if level > 1:
             low2 = self._forward(level - 1, low1)
         else:
             low2 = low1
-            low2 = self._modules['b2_plus_' + str(level)](low2)
+            low2 = self._modules[f'b2_plus_{str(level)}'](low2)
 
         low3 = low2
-        low3 = self._modules['b3_' + str(level)](low3)
+        low3 = self._modules[f'b3_{str(level)}'](low3)
 
         up2 = F.interpolate(low3, scale_factor=2, mode='nearest')
 
@@ -275,29 +275,16 @@ class FAN(nn.Module):
         self.end_relu = end_relu
         self.num_landmarks = num_landmarks
 
-        # Base part
-        if self.gray_scale:
-            self.conv1 = CoordConvTh(
-                x_dim=256,
-                y_dim=256,
-                with_r=True,
-                with_boundary=False,
-                in_channels=3,
-                out_channels=64,
-                kernel_size=7,
-                stride=2,
-                padding=3)
-        else:
-            self.conv1 = CoordConvTh(
-                x_dim=256,
-                y_dim=256,
-                with_r=True,
-                with_boundary=False,
-                in_channels=3,
-                out_channels=64,
-                kernel_size=7,
-                stride=2,
-                padding=3)
+        self.conv1 = CoordConvTh(
+            x_dim=256,
+            y_dim=256,
+            with_r=True,
+            with_boundary=False,
+            in_channels=3,
+            out_channels=64,
+            kernel_size=7,
+            stride=2,
+            padding=3)
         self.bn1 = nn.BatchNorm2d(64)
         self.conv2 = ConvBlock(64, 128)
         self.conv3 = ConvBlock(128, 128)
@@ -305,20 +292,35 @@ class FAN(nn.Module):
 
         # Stacking part
         for hg_module in range(self.num_modules):
-            if hg_module == 0:
-                first_one = True
-            else:
-                first_one = False
-            self.add_module('m' + str(hg_module), HourGlass(1, 4, 256, first_one))
-            self.add_module('top_m_' + str(hg_module), ConvBlock(256, 256))
-            self.add_module('conv_last' + str(hg_module), nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0))
-            self.add_module('bn_end' + str(hg_module), nn.BatchNorm2d(256))
-            self.add_module('l' + str(hg_module), nn.Conv2d(256, num_landmarks + 1, kernel_size=1, stride=1, padding=0))
+            first_one = hg_module == 0
+            self.add_module(f'm{str(hg_module)}', HourGlass(1, 4, 256, first_one))
+            self.add_module(f'top_m_{str(hg_module)}', ConvBlock(256, 256))
+            self.add_module(
+                f'conv_last{str(hg_module)}',
+                nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
+            )
+
+            self.add_module(f'bn_end{str(hg_module)}', nn.BatchNorm2d(256))
+            self.add_module(
+                f'l{str(hg_module)}',
+                nn.Conv2d(
+                    256, num_landmarks + 1, kernel_size=1, stride=1, padding=0
+                ),
+            )
+
 
             if hg_module < self.num_modules - 1:
-                self.add_module('bl' + str(hg_module), nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0))
-                self.add_module('al' + str(hg_module),
-                                nn.Conv2d(num_landmarks + 1, 256, kernel_size=1, stride=1, padding=0))
+                self.add_module(
+                    f'bl{str(hg_module)}',
+                    nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=0),
+                )
+
+                self.add_module(
+                    f'al{str(hg_module)}',
+                    nn.Conv2d(
+                        num_landmarks + 1, 256, kernel_size=1, stride=1, padding=0
+                    ),
+                )
 
     def forward(self, x):
         x, _ = self.conv1(x)
@@ -334,23 +336,29 @@ class FAN(nn.Module):
         boundary_channels = []
         tmp_out = None
         for i in range(self.num_modules):
-            hg, boundary_channel = self._modules['m' + str(i)](previous, tmp_out)
+            hg, boundary_channel = self._modules[f'm{str(i)}'](previous, tmp_out)
 
             ll = hg
-            ll = self._modules['top_m_' + str(i)](ll)
+            ll = self._modules[f'top_m_{str(i)}'](ll)
 
-            ll = F.relu(self._modules['bn_end' + str(i)](self._modules['conv_last' + str(i)](ll)), True)
+            ll = F.relu(
+                self._modules[f'bn_end{str(i)}'](
+                    self._modules['conv_last' + str(i)](ll)
+                ),
+                True,
+            )
+
 
             # Predict heatmaps
-            tmp_out = self._modules['l' + str(i)](ll)
+            tmp_out = self._modules[f'l{str(i)}'](ll)
             if self.end_relu:
                 tmp_out = F.relu(tmp_out)  # HACK: Added relu
             outputs.append(tmp_out)
             boundary_channels.append(boundary_channel)
 
             if i < self.num_modules - 1:
-                ll = self._modules['bl' + str(i)](ll)
-                tmp_out_ = self._modules['al' + str(i)](tmp_out)
+                ll = self._modules[f'bl{str(i)}'](ll)
+                tmp_out_ = self._modules[f'al{str(i)}'](tmp_out)
                 previous = previous + ll + tmp_out_
 
         return outputs, boundary_channels

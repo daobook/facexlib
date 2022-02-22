@@ -14,8 +14,7 @@ class Flatten(Module):
 
 def l2_norm(input, axis=1):
     norm = torch.norm(input, 2, axis, True)
-    output = torch.div(input, norm)
-    return output
+    return torch.div(input, norm)
 
 
 class SEModule(Module):
@@ -79,7 +78,9 @@ class Bottleneck(namedtuple('Block', ['in_channel', 'depth', 'stride'])):
 
 
 def get_block(in_channel, depth, num_units, stride=2):
-    return [Bottleneck(in_channel, depth, stride)] + [Bottleneck(depth, depth, 1) for i in range(num_units - 1)]
+    return [Bottleneck(in_channel, depth, stride)] + [
+        Bottleneck(depth, depth, 1) for _ in range(num_units - 1)
+    ]
 
 
 def get_blocks(num_layers):
@@ -123,8 +124,13 @@ class Backbone(Module):
             BatchNorm2d(512), Dropout(drop_ratio), Flatten(), Linear(512 * 7 * 7, 512), BatchNorm1d(512))
         modules = []
         for block in blocks:
-            for bottleneck in block:
-                modules.append(unit_module(bottleneck.in_channel, bottleneck.depth, bottleneck.stride))
+            modules.extend(
+                unit_module(
+                    bottleneck.in_channel, bottleneck.depth, bottleneck.stride
+                )
+                for bottleneck in block
+            )
+
         self.body = Sequential(*modules)
 
     def forward(self, x):
@@ -182,21 +188,26 @@ class Depth_Wise(Module):
         x = self.conv(x)
         x = self.conv_dw(x)
         x = self.project(x)
-        if self.residual:
-            output = short_cut + x
-        else:
-            output = x
-        return output
+        return short_cut + x if self.residual else x
 
 
 class Residual(Module):
 
     def __init__(self, c, num_block, groups, kernel=(3, 3), stride=(1, 1), padding=(1, 1)):
         super(Residual, self).__init__()
-        modules = []
-        for _ in range(num_block):
-            modules.append(
-                Depth_Wise(c, c, residual=True, kernel=kernel, padding=padding, stride=stride, groups=groups))
+        modules = [
+            Depth_Wise(
+                c,
+                c,
+                residual=True,
+                kernel=kernel,
+                padding=padding,
+                stride=stride,
+                groups=groups,
+            )
+            for _ in range(num_block)
+        ]
+
         self.model = Sequential(*modules)
 
     def forward(self, x):

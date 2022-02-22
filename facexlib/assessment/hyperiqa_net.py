@@ -18,9 +18,7 @@ class HyperIQA(nn.Module):
         target_net = TargetNet(net_params)
         for param in target_net.parameters():
             param.requires_grad = False
-        # predict the face quality
-        pred = target_net(net_params['target_in_vec'])
-        return pred
+        return target_net(net_params['target_in_vec'])
 
 
 class HyperNet(nn.Module):
@@ -101,20 +99,19 @@ class HyperNet(nn.Module):
         target_fc5w = self.fc5w_fc(self.pool(hyper_in_feat).squeeze()).view(-1, 1, self.f4, 1, 1)
         target_fc5b = self.fc5b_fc(self.pool(hyper_in_feat).squeeze()).view(-1, 1)
 
-        out = {}
-        out['target_in_vec'] = target_in_vec
-        out['target_fc1w'] = target_fc1w
-        out['target_fc1b'] = target_fc1b
-        out['target_fc2w'] = target_fc2w
-        out['target_fc2b'] = target_fc2b
-        out['target_fc3w'] = target_fc3w
-        out['target_fc3b'] = target_fc3b
-        out['target_fc4w'] = target_fc4w
-        out['target_fc4b'] = target_fc4b
-        out['target_fc5w'] = target_fc5w
-        out['target_fc5b'] = target_fc5b
-
-        return out
+        return {
+            'target_in_vec': target_in_vec,
+            'target_fc1w': target_fc1w,
+            'target_fc1b': target_fc1b,
+            'target_fc2w': target_fc2w,
+            'target_fc2b': target_fc2b,
+            'target_fc3w': target_fc3w,
+            'target_fc3b': target_fc3b,
+            'target_fc4w': target_fc4w,
+            'target_fc4b': target_fc4b,
+            'target_fc5w': target_fc5w,
+            'target_fc5b': target_fc5b,
+        }
 
 
 class Bottleneck(nn.Module):
@@ -199,12 +196,9 @@ class ResNetBackbone(nn.Module):
                 nn.BatchNorm2d(planes * block.expansion),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample))
+        layers = [block(self.inplanes, planes, stride, downsample)]
         self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes))
-
+        layers.extend(block(self.inplanes, planes) for _ in range(1, blocks))
         return nn.Sequential(*layers)
 
     def forward(self, x):
@@ -225,17 +219,14 @@ class ResNetBackbone(nn.Module):
 
         vec = torch.cat((lda_1, lda_2, lda_3, lda_4), 1)
 
-        out = {}
-        out['hyper_in_feat'] = x
-        out['target_in_vec'] = vec
-
-        return out
+        return {'hyper_in_feat': x, 'target_in_vec': vec}
 
 
 def resnet50_backbone(lda_out_channels, in_chn, **kwargs):
     """Constructs a ResNet-50 model_hyper."""
-    model = ResNetBackbone(lda_out_channels, in_chn, Bottleneck, [3, 4, 6, 3], **kwargs)
-    return model
+    return ResNetBackbone(
+        lda_out_channels, in_chn, Bottleneck, [3, 4, 6, 3], **kwargs
+    )
 
 
 class TargetNet(nn.Module):

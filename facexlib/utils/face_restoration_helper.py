@@ -30,10 +30,7 @@ def get_largest_face(det_faces, h, w):
 
 
 def get_center_face(det_faces, h=0, w=0, center=None):
-    if center is not None:
-        center = np.array(center)
-    else:
-        center = np.array([w / 2, h / 2])
+    center = np.array(center) if center is not None else np.array([w / 2, h / 2])
     center_dist = []
     for det_face in det_faces:
         face_center = np.array([(det_face[0] + det_face[2]) / 2, (det_face[1] + det_face[3]) / 2])
@@ -122,7 +119,7 @@ class FaceRestoreHelper(object):
             scale = 1
             input_img = self.input_img
         else:
-            h, w = self.input_img.shape[0:2]
+            h, w = self.input_img.shape[:2]
             scale = min(h, w) / resize
             h, w = int(h / scale), int(w / scale)
             input_img = cv2.resize(self.input_img, (w, h), interpolation=cv2.INTER_LANCZOS4)
@@ -140,7 +137,7 @@ class FaceRestoreHelper(object):
             else:
                 landmark = np.array([[bbox[i], bbox[i + 1]] for i in range(5, 15, 2)])
             self.all_landmarks_5.append(landmark)
-            self.det_faces.append(bbox[0:5])
+            self.det_faces.append(bbox[:5])
         if len(self.det_faces) == 0:
             return 0
         if only_keep_largest:
@@ -155,6 +152,7 @@ class FaceRestoreHelper(object):
         # pad blurry images
         if self.pad_blur:
             self.pad_input_imgs = []
+            rect_scale = 1.5
             for landmarks in self.all_landmarks_5:
                 # get landmarks
                 eye_left = landmarks[0, :]
@@ -170,7 +168,6 @@ class FaceRestoreHelper(object):
                 #  - np.flipud(eye_to_mouth) * [-1, 1]: rotate 90 clockwise
                 # norm with the hypotenuse: get the direction
                 x /= np.hypot(*x)  # get the hypotenuse of a right triangle
-                rect_scale = 1.5
                 x *= max(np.hypot(*eye_to_eye) * 2.0 * rect_scale, np.hypot(*eye_to_mouth) * 1.8 * rect_scale)
                 # y: half height of the oriented crop rectangle
                 y = np.flipud(x) * [-1, 1]
@@ -242,10 +239,7 @@ class FaceRestoreHelper(object):
                 border_mode = cv2.BORDER_REFLECT101
             elif border_mode == 'reflect':
                 border_mode = cv2.BORDER_REFLECT
-            if self.pad_blur:
-                input_img = self.pad_input_imgs[idx]
-            else:
-                input_img = self.input_img
+            input_img = self.pad_input_imgs[idx] if self.pad_blur else self.input_img
             cropped_face = cv2.warpAffine(
                 input_img, affine_matrix, self.face_size, borderMode=border_mode, borderValue=(135, 133, 132))  # gray
             self.cropped_faces.append(cropped_face)

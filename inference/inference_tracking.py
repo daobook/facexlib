@@ -30,7 +30,7 @@ def main(args):
     for idx, path in enumerate(frame_paths):
         img_basename = os.path.basename(path)
         frame = cv2.imread(path)
-        img_size = frame.shape[0:2]
+        img_size = frame.shape[:2]
 
         # detection face bboxes
         with torch.no_grad():
@@ -39,11 +39,11 @@ def main(args):
         additional_attr = []
         face_list = []
 
-        for idx_bb, bbox in enumerate(bboxes):
+        for bbox in bboxes:
             score = bbox[4]
             if score > face_score_threshold:
-                bbox = bbox[0:5]
-                det = bbox[0:4]
+                bbox = bbox[:5]
+                det = bbox[:4]
 
                 # face rectangle
                 det[0] = np.maximum(det[0] - margin, 0)
@@ -62,7 +62,7 @@ def main(args):
             for d in trackers:
                 d = d.astype(np.int32)
                 cv2.rectangle(frame, (d[0], d[1]), (d[2], d[3]), colors[d[4] % 32, :] * 255, 3)
-                if len(face_list) != 0:
+                if face_list:
                     cv2.putText(frame, 'ID : %d  DETECT' % (d[4]), (d[0] - 10, d[1] - 10), cv2.FONT_HERSHEY_SIMPLEX,
                                 0.75, colors[d[4] % 32, :] * 255, 2)
                     cv2.putText(frame, 'DETECTOR', (5, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (1, 1, 1), 2)

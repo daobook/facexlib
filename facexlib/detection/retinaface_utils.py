@@ -290,8 +290,7 @@ def decode_landm(pre, priors, variances):
         priors[:, :2] + pre[:, 6:8] * variances[0] * priors[:, 2:],
         priors[:, :2] + pre[:, 8:10] * variances[0] * priors[:, 2:],
     )
-    landms = torch.cat(tmp, dim=1)
-    return landms
+    return torch.cat(tmp, dim=1)
 
 
 def batched_decode(b_loc, priors, variances):

@@ -38,7 +38,7 @@ def main(args):
         # BRG -> RGB
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        for i in range(10):
+        for _ in range(10):
             detect_face = img[box[1]:box[3], box[0]:box[2], :]
             detect_face = Image.fromarray(detect_face)
 

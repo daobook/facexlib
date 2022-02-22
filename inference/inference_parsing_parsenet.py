@@ -10,10 +10,6 @@ from facexlib.utils.misc import img2tensor
 
 
 def vis_parsing_maps(img, parsing_anno, stride, save_anno_path=None, save_vis_path=None):
-    # Colors for all parts
-    part_colors = [[0, 0, 0], [204, 0, 0], [76, 153, 0], [204, 204, 0], [51, 51, 255], [204, 0, 204], [0, 255, 255],
-                   [255, 204, 204], [102, 51, 0], [255, 0, 0], [102, 204, 0], [255, 255, 0], [0, 0, 153], [0, 0, 204],
-                   [255, 51, 153], [0, 204, 204], [0, 51, 0], [255, 153, 51], [0, 204, 0]]
     #     0: 'background' 1: 'skin'   2: 'nose'
     #     3: 'eye_g'  4: 'l_eye'  5: 'r_eye'
     #     6: 'l_brow' 7: 'r_brow' 8: 'l_ear'
@@ -29,6 +25,10 @@ def vis_parsing_maps(img, parsing_anno, stride, save_anno_path=None, save_vis_pa
     if save_vis_path is not None:
         vis_parsing_anno_color = np.zeros((vis_parsing_anno.shape[0], vis_parsing_anno.shape[1], 3)) + 255
         num_of_class = np.max(vis_parsing_anno)
+        # Colors for all parts
+        part_colors = [[0, 0, 0], [204, 0, 0], [76, 153, 0], [204, 204, 0], [51, 51, 255], [204, 0, 204], [0, 255, 255],
+                       [255, 204, 204], [102, 51, 0], [255, 0, 0], [102, 204, 0], [255, 255, 0], [0, 0, 153], [0, 0, 204],
+                       [255, 51, 153], [0, 204, 204], [0, 51, 0], [255, 153, 51], [0, 204, 0]]
         for pi in range(1, num_of_class + 1):
             index = np.where(vis_parsing_anno == pi)
             vis_parsing_anno_color[index[0], index[1], :] = part_colors[pi]
